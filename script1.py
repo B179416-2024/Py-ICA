@@ -49,3 +49,47 @@ def get_user_input():
     return protein_family, taxonomic_group
     
 
+def get_database(protein_family = "glucose-6-phosphatase", taxonomic_group = "aves"):
+
+    entries = subprocess.check_output(["esearch -db protein -query '"+protein_family+" [PROT] AND "+taxonomic_group+" [ORGN]' | efetch -format fasta"], shell = True).decode("utf-8")
+
+    sequences = entries.split("\n")
+
+        #Check the search isn't empty or there are >1000!
+    count = entries.count(">")
+    if count == 0:
+        raise ValueError("The search was empty... either your input had some error, or you are researching something never-seen-before!")
+    
+    elif count > 1000:
+        print("My friend, that's a popular one! More than 1,000 sequences were found.")
+        confirm = input("I recommend refining your interests. Do you still want to proceed? (y/n)")
+        if confirm != "y":
+            print("You have not selected 'y', so we are exiting the program...\nHope to see you again!")
+            return
+    database = open("sequences.txt","w")
+    database.write(entries)
+    database.close()
+
+    return count
+
+def mult_alignment(file_name="sequences.txt"):
+    
+    #Below is not needed. I originally coded it to format the input for the Python package 'clustalo', which isn't loaded.
+    #sequences = open(file_name).read()
+
+    #seq = sequences.split(">")
+
+    #seq_dict = {}
+    #for i in seq:
+    #    end_name = i.find("]") + 1
+    #    name = i[:end_name]
+    #    sequence = i[end_name:].replace("\n","")
+        
+    #    seq_dict[name] = sequence
+
+    #So I'm using bash clustalo instead
+    subprocess.call(["clustalo -i "+file_name+" -o alignment.out -v"], shell=True)
+    subprocess.call("plotcon -sequences alignment.out -graph png -winsize 5", shell=True)
+    subprocess.call("infoalign -sequence alignment.out -outfile 'alignment.info'", shell=True)
+
+    return "Alignment done!"
